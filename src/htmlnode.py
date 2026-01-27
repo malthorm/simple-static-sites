@@ -1,13 +1,18 @@
-from dataclasses import dataclass
 from typing import Self
 
 
-@dataclass
 class HTMLNode:
-    tag: str | None = None
-    value: str | None = None
-    children: list[Self] | None = None
-    props: dict[str, str] | None = None
+    def __init__(
+        self,
+        tag: str | None = None,
+        value: str | None = None,
+        children: list[Self] | None = None,
+        props: dict[str, str] | None = None,
+    ) -> None:
+        self.tag = tag
+        self.value = value
+        self.children = children
+        self.props = props
 
     def to_html(self) -> str:
         raise NotImplementedError
@@ -19,3 +24,31 @@ class HTMLNode:
 
     def __repr__(self) -> str:
         return f"HTMLNode({self.tag}, {self.value}, {self.children}, {self.props})"
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, HTMLNode):
+            return NotImplemented
+
+        return (
+            self.tag == other.tag
+            and self.value == other.value
+            and self.children == other.children
+            and self.props == other.props
+        )
+
+
+class LeafNode(HTMLNode):
+    def __init__(
+        self, tag: str | None, value: str, props: dict[str, str] | None = None
+    ) -> None:
+        super().__init__(tag=tag, value=value, props=props)
+
+    def to_html(self) -> str:
+        if not self.value:
+            raise ValueError("Leaf nodes must have a value.")
+        if not self.tag:
+            return self.value
+        return f"<{self.tag}{self.props_to_html()}>{self.value}</{self.tag}>"
+
+    def __repr__(self) -> str:
+        return f"HTMLNode({self.tag}, {self.value}, {self.props})"
