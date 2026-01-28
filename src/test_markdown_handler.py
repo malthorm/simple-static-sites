@@ -1,7 +1,11 @@
 import unittest
 
 from textnode import TextType, TextNode
-from markdown_handler import split_nodes_delimiter
+from markdown_handler import (
+    split_nodes_delimiter,
+    extract_markdown_images,
+    extract_markdown_links,
+)
 
 
 class TestMarkdownHanlder(unittest.TestCase):
@@ -59,3 +63,31 @@ class TestMarkdownHanlder(unittest.TestCase):
             TextNode("end", TextType.ITALIC),
         ]
         self.assertEqual(new_nodes, expected_nodes)
+
+    def test_extract_markdown_images(self):
+        matches = extract_markdown_images(
+            "This is text with an ![image](https://i.imgur.com/zjjcJKZ.png)"
+        )
+        self.assertListEqual([("image", "https://i.imgur.com/zjjcJKZ.png")], matches)
+
+    def test_extract_markdown_images_no_additional_text(self):
+        matches = extract_markdown_images("![image](https://i.imgur.com/zjjcJKZ.png)")
+        self.assertListEqual([("image", "https://i.imgur.com/zjjcJKZ.png")], matches)
+
+    def test_dont_extract_markdown_images_with_bad_format(self):
+        matches = extract_markdown_images("[image](https://i.imgur.com/zjjcJKZ.png)")
+        self.assertListEqual([], matches)
+
+    def test_extract_markdown_links(self):
+        matches = extract_markdown_links(
+            "This is a paragraph with a [link](https://www.example.com)."
+        )
+        self.assertListEqual([("link", "https://www.example.com")], matches)
+
+    def test_extract_two_markdown_links(self):
+        matches = extract_markdown_links(
+            "This is a paragraph with a [link](https://www.example.com), and then [another](www.test.de)."
+        )
+        self.assertListEqual(
+            [("link", "https://www.example.com"), ("another", "www.test.de")], matches
+        )
