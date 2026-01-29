@@ -1,5 +1,15 @@
 import re
+from enum import StrEnum
 from textnode import TextNode, TextType
+
+
+class BlockType(StrEnum):
+    PARAGRAPH = "paragraph"
+    HEADING = "heading"
+    CODE = "code"
+    QUOTE = "quote"
+    UNORDERED_LIST = "unordered_list"
+    ORDERED_LIST = "ordered_list"
 
 
 def split_nodes_delimiter(
@@ -113,3 +123,33 @@ def markdown_to_blocks(markdown: str) -> list[str]:
         blocks.append("\n".join(lines))
 
     return blocks
+
+
+def _is_ordered_list(block: str) -> bool:
+    match = re.match(r"^\D+\.*", block)
+    if match:
+        return False
+    num = 1
+    for line in block.split("\n"):
+        try:
+            num_str, _ = line.split(". ", maxsplit=1)
+            if not int(num_str) == num:
+                return False
+        except ValueError:
+            return False
+        num += 1
+    return True
+
+
+def block_to_block_type(block: str) -> BlockType:
+    if re.match(r"^#{1,6} ", block):
+        return BlockType.HEADING
+    if block.startswith("```\n") and block.endswith("```"):
+        return BlockType.CODE
+    if all(line.startswith(">") for line in block.split("\n")):
+        return BlockType.QUOTE
+    if all(line.startswith("- ") for line in block.split("\n")):
+        return BlockType.UNORDERED_LIST
+    if _is_ordered_list(block):
+        return BlockType.ORDERED_LIST
+    return BlockType.PARAGRAPH

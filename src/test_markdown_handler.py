@@ -2,6 +2,8 @@ import unittest
 
 from textnode import TextType, TextNode
 from markdown_handler import (
+    BlockType,
+    block_to_block_type,
     split_nodes_delimiter,
     extract_markdown_images,
     extract_markdown_links,
@@ -351,3 +353,78 @@ This is the same paragraph on a new line
                 "- This is a list\n- with items",
             ],
         )
+
+    def test_block_to_blocktype_paragraph(self):
+        md = "This is a **bolded** paragraph"
+        block_type = block_to_block_type(md)
+        self.assertEqual(BlockType.PARAGRAPH, block_type)
+
+    def test_block_to_blocktype_heading(self):
+        md = "# This is a heading"
+        block_type = block_to_block_type(md)
+        self.assertEqual(BlockType.HEADING, block_type)
+
+    def test_block_to_blocktype_heading_with_malformed_heading(self):
+        md = "#This is not a heading"
+        block_type = block_to_block_type(md)
+        self.assertNotEqual(BlockType.HEADING, block_type)
+
+    def test_block_to_blocktype_heading_with_subheading(self):
+        md = "#### This is a sub-heading"
+        block_type = block_to_block_type(md)
+        self.assertEqual(BlockType.HEADING, block_type)
+
+    def test_block_to_blocktype_heading_with_subheading_too_deep(self):
+        md = "####### This is not a sub-heading, too many #s"
+        block_type = block_to_block_type(md)
+        self.assertNotEqual(BlockType.HEADING, block_type)
+
+    def test_block_to_blocktype_code(self):
+        md = "```\nThis is a codeblock```"
+        block_type = block_to_block_type(md)
+        self.assertEqual(BlockType.CODE, block_type)
+
+    def test_block_to_blocktype_malformed_codeblock(self):
+        md = "```This is not a codeblock```"
+        block_type = block_to_block_type(md)
+        self.assertNotEqual(BlockType.CODE, block_type)
+
+    def test_block_to_blocktype_block_quote(self):
+        md = "> This is a quote\n>and it continues here"
+        block_type = block_to_block_type(md)
+        self.assertEqual(BlockType.QUOTE, block_type)
+
+    def test_block_to_blocktype_malforemd_block_quote(self):
+        md = "> This is a quote\nand it continues here> here\n> and here"
+        block_type = block_to_block_type(md)
+        self.assertNotEqual(BlockType.QUOTE, block_type)
+
+    def test_block_to_blocktype_unordered_list(self):
+        md = "- first\n- second\n- third"
+        block_type = block_to_block_type(md)
+        self.assertEqual(BlockType.UNORDERED_LIST, block_type)
+
+    def test_block_to_blocktype_malformed_unordered_list(self):
+        md = "- first\n- second\n - third"
+        block_type = block_to_block_type(md)
+        self.assertNotEqual(BlockType.UNORDERED_LIST, block_type)
+
+    def test_block_to_blocktype_ordered_list(self):
+        md = "1. first\n2. second\n3. third"
+        block_type = block_to_block_type(md)
+        self.assertEqual(BlockType.ORDERED_LIST, block_type)
+
+    def test_block_to_blocktype_malformed_ordered_list_bad_num(self):
+        md = "1. first\n2. second\n3x. third"
+        block_type = block_to_block_type(md)
+        self.assertNotEqual(BlockType.ORDERED_LIST, block_type)
+
+    def test_block_to_blocktype_malformed_ordered_list_bad_ordering(self):
+        md = "1. first\n2. second\n4 . third"
+        block_type = block_to_block_type(md)
+        self.assertNotEqual(BlockType.ORDERED_LIST, block_type)
+
+    def test_block_to_blocktype_malformed_ordered_list_bad_indent(self):
+        md = "1. first\n2. second\n3.third"
+        block_type = block_to_block_type(md)
+        self.assertNotEqual(BlockType.ORDERED_LIST, block_type)
