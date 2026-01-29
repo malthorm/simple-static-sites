@@ -7,6 +7,7 @@ from markdown_handler import (
     extract_markdown_links,
     split_nodes_image,
     split_nodes_link,
+    text_to_textnodes,
 )
 
 
@@ -229,3 +230,51 @@ class TestMarkdownHanlder(unittest.TestCase):
         node = TextNode("Just some text", TextType.TEXT)
         new_nodes = split_nodes_link([node])
         self.assertListEqual([TextNode("Just some text", TextType.TEXT)], new_nodes)
+
+    def test_text_to_textnodes(self):
+        text = "This is **text** with an _italic_ word and a `code block` and an ![obi wan image](https://i.imgur.com/fJRm4Vk.jpeg) and a [link](https://boot.dev)"
+        new_nodes = text_to_textnodes(text)
+        self.assertListEqual(
+            [
+                TextNode("This is ", TextType.TEXT),
+                TextNode("text", TextType.BOLD),
+                TextNode(" with an ", TextType.TEXT),
+                TextNode("italic", TextType.ITALIC),
+                TextNode(" word and a ", TextType.TEXT),
+                TextNode("code block", TextType.CODE),
+                TextNode(" and an ", TextType.TEXT),
+                TextNode(
+                    "obi wan image", TextType.IMAGE, "https://i.imgur.com/fJRm4Vk.jpeg"
+                ),
+                TextNode(" and a ", TextType.TEXT),
+                TextNode("link", TextType.LINK, "https://boot.dev"),
+            ],
+            new_nodes,
+        )
+
+    def test_text_to_textnodes_with_plain_text(self):
+        text = "This is just some text"
+        new_nodes = text_to_textnodes(text)
+        self.assertListEqual(
+            [TextNode("This is just some text", TextType.TEXT)],
+            new_nodes,
+        )
+
+    def test_text_to_textnodes_with_chained_markup(self):
+        text = "**bold**_italic_`code`![img](www.src.com)plain"
+        new_nodes = text_to_textnodes(text)
+        self.assertListEqual(
+            [
+                TextNode("bold", TextType.BOLD),
+                TextNode("italic", TextType.ITALIC),
+                TextNode("code", TextType.CODE),
+                TextNode("img", TextType.IMAGE, "www.src.com"),
+                TextNode("plain", TextType.TEXT),
+            ],
+            new_nodes,
+        )
+
+    def test_to_text_with_invalid_markdown(self):
+        text = "**bold**_italic_`code`![img](www.src.com)plain"
+        new_nodes = text_to_textnodes(text)
+        self.assertRaises(ValueError)
