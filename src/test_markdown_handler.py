@@ -11,6 +11,7 @@ from markdown_handler import (
     split_nodes_link,
     text_to_textnodes,
     markdown_to_blocks,
+    markdown_to_html_node,
 )
 
 
@@ -428,3 +429,109 @@ This is the same paragraph on a new line
         md = "1. first\n2. second\n3.third"
         block_type = block_to_block_type(md)
         self.assertNotEqual(BlockType.ORDERED_LIST, block_type)
+
+    def test_paragraphs(self):
+        md = """
+    This is **bolded** paragraph
+    text in a p
+    tag here
+
+    This is another paragraph with _italic_ text and `code` here
+
+    """
+
+        node = markdown_to_html_node(md)
+        html = node.to_html()
+        self.assertEqual(
+            html,
+            "<div><p>This is <b>bolded</b> paragraph text in a p tag here</p><p>This is another paragraph with <i>italic</i> text and <code>code</code> here</p></div>",
+        )
+
+    def test_codeblock(self):
+        md = """
+    ```
+    This is text that _should_ remain
+    the **same** even with inline stuff
+    ```
+    """
+
+        node = markdown_to_html_node(md)
+        html = node.to_html()
+        self.assertEqual(
+            html,
+            "<div><pre><code>This is text that _should_ remain\nthe **same** even with inline stuff\n</code></pre></div>",
+        )
+
+    def test_markdown_headings_to_html(self):
+        md = """
+# Title
+
+## Intro
+
+Here is some paragraph
+
+###### This just be an h6
+
+####### This has too many #s, so it's a paragraph
+"""
+
+        node = markdown_to_html_node(md)
+        html = node.to_html()
+        self.assertEqual(
+            html,
+            "<div><h1>Title</h1><h2>Intro</h2><p>Here is some paragraph</p><h6>This just be an h6</h6><p>####### This has too many #s, so it's a paragraph</p></div>",
+        )
+
+    def test_markdown__to_html_with_links_and_images(self):
+        md = r"""
+# Title
+
+## Intro
+
+Here is some paragraph
+
+###### This just be an h6
+
+![Background](some_img.jpg)
+
+[google](https://www.google.com)
+"""
+
+        node = markdown_to_html_node(md)
+        html = node.to_html()
+        self.assertEqual(
+            html,
+            '<div><h1>Title</h1><h2>Intro</h2><p>Here is some paragraph</p><h6>This just be an h6</h6><p><img src="some_img.jpg" alt="Background"></img></p><p><a href="https://www.google.com">google</a></p></div>',
+        )
+
+    def test_markdown__to_html_with_ordered_list(self):
+        md = r"""
+# Ordered List
+
+1. first
+2. second
+3. third
+"""
+
+        node = markdown_to_html_node(md)
+        html = node.to_html()
+        self.assertEqual(
+            html,
+            "<div><h1>Ordered List</h1><ol><li>first</li><li>second</li><li>third</li></ol></div>",
+        )
+
+    def test_markdown__to_html_with_unordered_list(self):
+        md = r"""
+# Ordered List
+
+- first
+- second
+- third
+"""
+
+        node = markdown_to_html_node(md)
+        html = node.to_html()
+        self.assertEqual(
+            html,
+            "<div><h1>Ordered List</h1><ul><li>first</li><li>second</li><li>third</li></ul></div>",
+        )

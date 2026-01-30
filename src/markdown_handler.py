@@ -1,6 +1,10 @@
 import re
+import textwrap
 from enum import StrEnum
-from textnode import TextNode, TextType
+from typing import Sequence
+
+from textnode import TextNode, TextType, text_node_to_html_node
+from htmlnode import HTMLNode, LeafNode, ParentNode
 
 
 class BlockType(StrEnum):
@@ -153,3 +157,76 @@ def block_to_block_type(block: str) -> BlockType:
     if _is_ordered_list(block):
         return BlockType.ORDERED_LIST
     return BlockType.PARAGRAPH
+
+
+def text_to_children(text: str) -> list[HTMLNode]:
+    children: Sequence[HTMLNode] = []
+    for node in text_to_textnodes(text):
+        children.append(text_node_to_html_node(node))
+    return children
+
+
+def markdown_to_html_node(md: str) -> ParentNode:
+    md = textwrap.dedent(md).strip("\n")
+    blocks = markdown_to_blocks(md)
+    html_blocks = [block_to_html_node(block) for block in blocks]
+    return ParentNode("div", html_blocks)
+
+
+def block_to_html_node(block: str) -> ParentNode:
+    block_type = block_to_block_type(block)
+
+    match block_type:
+        case BlockType.CODE:
+            return code_block_to_html_node(block)
+        case BlockType.HEADING:
+            return heading_block_to_html_node(block)
+        case BlockType.QUOTE:
+            return quote_block_to_html_node(block)
+        case BlockType.UNORDERED_LIST:
+            return ulist_block_to_html_node(block)
+        case BlockType.ORDERED_LIST:
+            return olist_block_to_html_node(block)
+        case _:
+            return paragraph_block_to_html_node(block)
+
+
+def code_block_to_html_node(block: str) -> ParentNode:
+    lines = block.splitlines()
+    text = "\n".join(lines[1:-1]) + "\n"
+    return ParentNode("pre", [LeafNode("code", text)])
+
+
+def heading_block_to_html_node(block: str) -> ParentNode:
+    level = len(block.split()[0])  # "###" = 3 => h3
+    text = block.split(maxsplit=1)[1] if len(block.split()) > 1 else ""
+    return ParentNode(f"h{level}", text_to_children(text))
+
+
+def quote_block_to_html_node(block: str) -> ParentNode:
+    # remove leading '>' and optional following space, line by line
+    lines = [
+        line[1:].lstrip() if line.startswith(">") else line
+        for line in block.splitlines()
+    ]
+    text = " ".join(lines)
+    return ParentNode("blockquote", text_to_children(text))
+
+
+def paragraph_block_to_html_node(block: str) -> ParentNode:
+    text = " ".join(line.strip() for line in block.splitlines())
+    return ParentNode("p", text_to_children(text))
+
+
+def ulist_block_to_html_node(block: str) -> ParentNode:
+    # remove '- ' line by line
+    items = [line.split(maxsplit=1)[1] for line in block.splitlines()]
+    li_nodes = [ParentNode("li", text_to_children(item)) for item in items]
+    return ParentNode("ul", li_nodes)
+
+
+def olist_block_to_html_node(block: str) -> ParentNode:
+    # remove '\d. ' line by line
+    items = [line.split(maxsplit=1)[1] for line in block.splitlines()]
+    li_nodes = [ParentNode("li", text_to_children(item)) for item in items]
+    return ParentNode("ol", li_nodes)

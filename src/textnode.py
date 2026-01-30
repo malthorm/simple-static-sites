@@ -33,7 +33,7 @@ class TextNode:
         return f"TextNode({self.text}, {self.text_type}, {self.url})"
 
 
-def text_node_to_html_node(text_node: TextNode):
+def text_node_to_html_node(text_node: TextNode) -> LeafNode:
     text = text_node.text
     url = text_node.url if text_node.url else ""
     match text_node.text_type:
