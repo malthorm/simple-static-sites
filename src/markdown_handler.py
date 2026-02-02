@@ -50,6 +50,18 @@ def split_nodes_delimiter(
     return new_nodes
 
 
+def extract_title(markdown: str) -> str:
+    blocks = markdown_to_blocks(markdown)
+    if not blocks:
+        raise ValueError("Title is missing")
+
+    first = blocks[0]
+    if first.startswith("# "):
+        return first[2:]
+    else:
+        raise ValueError("Title is missing")
+
+
 def extract_markdown_images(text: str) -> list[tuple[str, str]]:
     return re.findall(r"!\[(.*?)\]\((.*?)\)", text)
 

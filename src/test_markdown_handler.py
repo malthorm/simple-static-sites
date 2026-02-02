@@ -12,6 +12,7 @@ from markdown_handler import (
     text_to_textnodes,
     markdown_to_blocks,
     markdown_to_html_node,
+    extract_title,
 )
 
 
@@ -535,3 +536,56 @@ Here is some paragraph
             html,
             "<div><h1>Ordered List</h1><ul><li>first</li><li>second</li><li>third</li></ul></div>",
         )
+
+    def test_extract_title_md_only_contains_valid_title(self):
+        md = "# This is a title"
+        title = extract_title(md)
+        self.assertEqual(title, "This is a title")
+
+    def test_extract_title_md_only_contains_invalid_title(self):
+        md = "#This is not a title"
+        with self.assertRaises(ValueError):
+            extract_title(md)
+
+    def test_extract_title_md_empty(self):
+        md = ""
+        with self.assertRaises(ValueError):
+            extract_title(md)
+
+    def test_extract_title_md_with_more_md_content(self):
+        md = r"""# Lists
+
+## Unordered list
+
+- first
+- second
+- third
+
+## Ordered list
+
+1. first
+2. second
+3. third
+"""
+        title = extract_title(md)
+        self.assertEqual(title, "Lists")
+
+    def test_extract_title_md_with_empty_lines_at_beginning(self):
+        md = r"""
+
+# Lists
+
+## Unordered list
+
+- first
+- second
+- third
+
+## Ordered list
+
+1. first
+2. second
+3. third
+"""
+        title = extract_title(md)
+        self.assertEqual(title, "Lists")
