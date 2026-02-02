@@ -1,9 +1,7 @@
-import logging
 import os
 import shutil
 
-logging.basicConfig(level=logging.INFO, format="%(message)s")
-logger = logging.getLogger(__name__)
+from logger import logger
 
 
 def copy_static(src: str, dest: str) -> None:
